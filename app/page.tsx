@@ -11,14 +11,13 @@ import {
 } from "@/components/ui/table"
 import { CoffeeTableHeader } from "@/components/coffee-table-header";
 import { db } from '@/lib/firebase';
-// Example usage in a component
 import { collection, getDocs } from 'firebase/firestore';
 
 interface CoffeeShop {
   id: string;
   name: string;
   description: string;
-  image: string;
+  imageUrl: string;
 }
 
 export default function Home() {
@@ -29,7 +28,6 @@ export default function Home() {
     if (fetchedRef.current) return;
     
     async function fetchData() {
-      console.log("Initial Data Fetch");
       const querySnapshot = await getDocs(collection(db, 'shops'));
       const items: CoffeeShop[] = [];
       querySnapshot.forEach((doc) => {
@@ -59,7 +57,7 @@ export default function Home() {
             <TableRow key={item.id}>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.description}</TableCell>
-              <TableCell>{item.image}</TableCell>
+              <TableCell>{item.imageUrl}</TableCell>
             </TableRow>
           ))}
         </TableBody>
