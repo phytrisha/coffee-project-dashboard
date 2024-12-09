@@ -5,8 +5,8 @@ import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Pencil, CirclePlus } from "lucide-react";
-
+import { ChevronLeft, Pencil, CirclePlus, Pen } from "lucide-react";
+import Link from 'next/link'
 
 interface Drink {
   id: string;
@@ -52,16 +52,41 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="p-8">
-      <a href="../../">
-        <Button variant="ghost">
-          <ChevronLeft />Overview
-        </Button>
-      </a>
+      <Link href="../../" className='text-sm flex flex-row items-center font-medium my-4'><ChevronLeft size={20}/>Overview</Link>
       <div className='flex flex-row'>
         <h1 className="w-full text-xl font-bold">
           {shop.name}
         </h1>
-        <Button>
+      </div>
+
+      <div className='flex flex-row mt-8 mb-4'>
+        <h2 className='w-full text-lg font-bold'>Shop Information</h2>
+        <Button variant="secondary">
+          <Pen />Edit
+        </Button>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Image URL</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className='font-mono'>{shop.id}</TableCell>
+            <TableCell>{shop.name}</TableCell>
+            <TableCell>{shop.description}</TableCell>
+            <TableCell>{shop.imageUrl}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+
+      <div className='flex flex-row mt-12 mb-4'>
+        <h2 className='w-full text-lg font-bold'>Drinks</h2>
+        <Button variant="secondary">
           <CirclePlus />Add Drink
         </Button>
       </div>
@@ -73,6 +98,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
             <TableHead>Price</TableHead>
             <TableHead>Featured</TableHead>
             <TableHead>Image URL</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -85,7 +111,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
               <TableCell>{drink.imageUrl}</TableCell>
               <TableCell>
                 <Button variant="link" >
-                  Edit<Pencil />
+                  <Pencil />Edit
                 </Button>
               </TableCell>
             </TableRow>
