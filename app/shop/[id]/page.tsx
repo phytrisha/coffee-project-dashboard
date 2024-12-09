@@ -5,7 +5,7 @@ import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Pencil, CirclePlus } from "lucide-react";
 
 
 interface Drink {
@@ -57,9 +57,14 @@ export default function ShopPage({ params }: { params: { id: string } }) {
           <ChevronLeft />Overview
         </Button>
       </a>
-      <h1 className="w-full text-xl font-bold">
-        {shop.name}
-      </h1>
+      <div className='flex flex-row'>
+        <h1 className="w-full text-xl font-bold">
+          {shop.name}
+        </h1>
+        <Button>
+          <CirclePlus />Add Drink
+        </Button>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -78,6 +83,11 @@ export default function ShopPage({ params }: { params: { id: string } }) {
               <TableCell>${drink.price.toFixed(2)}</TableCell>
               <TableCell>{drink.featured.toString()}</TableCell>
               <TableCell>{drink.imageUrl}</TableCell>
+              <TableCell>
+                <Button variant="link" >
+                  Edit<Pencil />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
