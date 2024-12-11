@@ -61,7 +61,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
       <div className='flex flex-row mt-8 mb-4'>
         <h2 className='w-full text-lg font-bold'>Shop Information</h2>
-        <Button variant="secondary">
+        <Button variant="link">
           <Pen />Edit
         </Button>
       </div>
@@ -86,7 +86,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
       <div className='flex flex-row mt-12 mb-4'>
         <h2 className='w-full text-lg font-bold'>Drinks</h2>
-        <Button variant="secondary">
+        <Button>
           <CirclePlus />Add Drink
         </Button>
       </div>
