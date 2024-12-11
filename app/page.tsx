@@ -1,14 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from "lucide-react";
 import { CoffeeTableHeader } from "@/components/coffee-table-header";

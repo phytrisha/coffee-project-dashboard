@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { UpdateCoffeeShop } from "@/components/coffee-shop"
+
 import { ChevronLeft, Pencil, CirclePlus, Pen } from "lucide-react";
 import Link from 'next/link'
 
@@ -27,26 +34,64 @@ interface CoffeeShop {
 
 export default function ShopPage({ params }: { params: { id: string } }) {
   const [shop, setShop] = useState<CoffeeShop | null>(null);
+  const [nameInputValue, setNameInputValue] = useState(shop?.name || '');
+  const [descriptionInputValue, setDescriptionInputValue] = useState('');
+  const [imageUrlInputValue, setImageUrlInputValue] = useState('');
+  const [editCoffeeShopOpen, setEditCoffeeShopOpen] = useState(false);
 
+
+  // Add this new useEffect to update input values when shop data loads
   useEffect(() => {
-    async function fetchShopData() {
-      const shopDoc = await getDoc(doc(db, 'shops', params.id));
-      const drinksSnapshot = await getDocs(collection(db, 'shops', params.id, 'drinks'));
-      
-      const drinks = drinksSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setShop({
-        id: shopDoc.id,
-        ...shopDoc.data(),
-        drinks
-      } as CoffeeShop);
+    if (shop) {
+      setNameInputValue(shop.name);
+      setDescriptionInputValue(shop.description);
+      setImageUrlInputValue(shop.imageUrl);
     }
+  }, [shop]);
 
-    fetchShopData();
+  const fetchShopData = async (shopId: string) => {
+    const shopDoc = await getDoc(doc(db, 'shops', shopId));
+    const drinksSnapshot = await getDocs(collection(db, 'shops', shopId, 'drinks'));
+    
+    const drinks = drinksSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  
+    setShop({
+      id: shopDoc.id,
+      ...shopDoc.data(),
+      drinks
+    } as CoffeeShop);
+  };
+  
+  // Use it in useEffect
+  useEffect(() => {
+    if (params.id) {
+      fetchShopData(params.id);
+    }
   }, [params.id]);
+  
+  // And in handleSubmit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shop?.id) return;
+  
+    try {
+      await UpdateCoffeeShop(shop.id, {
+        name: nameInputValue,
+        description: descriptionInputValue,
+        imageUrl: imageUrlInputValue
+      });
+  
+      // Refetch data
+      await fetchShopData(shop.id);
+      setEditCoffeeShopOpen(false);  // Close the dialog
+      
+    } catch (error) {
+      console.error('Error updating shop:', error);
+    }
+  };
 
   if (!shop) return <div>Loading...</div>;
 
@@ -61,9 +106,57 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
       <div className='flex flex-row mt-8 mb-4'>
         <h2 className='w-full text-lg font-bold'>Shop Information</h2>
-        <Button variant="link">
-          <Pen />Edit
-        </Button>
+        
+        <Dialog open={editCoffeeShopOpen} onOpenChange={setEditCoffeeShopOpen}>
+          <DialogTrigger>
+            <Button variant="link">
+              <Pen />Edit
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit</DialogTitle>
+              <DialogDescription>
+                Edit the details of your coffeeshop.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid w-full max-w-sm items-center gap-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  type="name"
+                  id="name"
+                  placeholder="My Coffee Shop"
+                  value={nameInputValue}
+                  onChange={(e) => setNameInputValue(e.target.value)}
+                />
+              </div>
+              <div className="grid w-full gap-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Type your message here."
+                  value={descriptionInputValue}
+                  onChange={(e) => setDescriptionInputValue(e.target.value)}
+                />
+              </div>
+              <div className="grid w-full max-w-sm items-center gap-y-2">
+                <Label htmlFor="imageUrl">Image URL</Label>
+                <Input
+                  type="imageUrl"
+                  id="imageUrl"
+                  placeholder="image.png"
+                  value={imageUrlInputValue}
+                  onChange={(e) => setImageUrlInputValue(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+          
+        </Dialog>
       </div>
       <Table>
         <TableHeader>
