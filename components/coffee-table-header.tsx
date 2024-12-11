@@ -15,17 +15,40 @@ import { Textarea } from "@/components/ui/textarea"
 import { AddCoffeeShop } from "./coffee-shop"
 import { useState } from 'react';
 
+interface CoffeeTableHeaderProps {
+  onShopAdded?: () => void;  // Optional callback for when a shop is added
+}
 
-export function CoffeeTableHeader() {
+export function CoffeeTableHeader({ onShopAdded }: CoffeeTableHeaderProps) {
   const [nameInputValue, setNameInputValue] = useState('');
   const [descriptionInputValue, setDescriptionInputValue] = useState('');
   const [imageUrlInputValue, setImageUrlInputValue] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const resetForm = () => {
+    setNameInputValue('');
+    setDescriptionInputValue('');
+    setImageUrlInputValue('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log(nameInputValue)
     e.preventDefault();
-    await AddCoffeeShop(nameInputValue, descriptionInputValue, imageUrlInputValue);
-    // Refresh data after adding
+    try {
+      await AddCoffeeShop(nameInputValue, descriptionInputValue, imageUrlInputValue);
+      
+      // Reset form
+      resetForm();
+      
+      // Close dialog
+      setDialogOpen(false);
+      
+      // Notify parent component to refresh data
+      if (onShopAdded) {
+        onShopAdded();
+      }
+    } catch (error) {
+      console.error('Error adding coffee shop:', error);
+    }
   };
 
   return (
@@ -34,7 +57,7 @@ export function CoffeeTableHeader() {
           Coffee Shops
         </h1>
         
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus />

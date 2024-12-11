@@ -5,14 +5,17 @@ import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { UpdateCoffeeShop } from "@/components/coffee-shop"
+import { UpdateCoffeeShop } from "@/components/coffee-shop";
+import { Switch } from "@/components/ui/switch";
+import { AddDrink, UpdateDrink, DeleteDrink } from "@/components/drinks"
 
-import { ChevronLeft, Pencil, CirclePlus, Pen } from "lucide-react";
+import { ChevronLeft, Pencil, CirclePlus, Pen, Trash2 } from "lucide-react";
 import Link from 'next/link'
 
 interface Drink {
@@ -39,6 +42,29 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const [imageUrlInputValue, setImageUrlInputValue] = useState('');
   const [editCoffeeShopOpen, setEditCoffeeShopOpen] = useState(false);
 
+  const [addDrinkOpen, setAddDrinkOpen] = useState(false);
+  const [newDrink, setNewDrink] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    featured: false,
+    imageUrl: ''
+  });
+
+  // New state for editing drinks
+  const [editDrinkOpen, setEditDrinkOpen] = useState(false);
+  const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+  const [editingDrink, setEditingDrink] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    featured: false,
+    imageUrl: ''
+  });
+
+  // New state for delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [drinkToDelete, setDrinkToDelete] = useState<Drink | null>(null);
 
   // Add this new useEffect to update input values when shop data loads
   useEffect(() => {
@@ -90,6 +116,94 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       
     } catch (error) {
       console.error('Error updating shop:', error);
+    }
+  };
+
+  const handleAddDrink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shop?.id) return;
+
+    try {
+      await AddDrink(shop.id, {
+        name: newDrink.name,
+        description: newDrink.description,
+        price: parseFloat(newDrink.price.toString()),
+        featured: newDrink.featured,
+        imageUrl: newDrink.imageUrl
+      });
+
+      // Reset form and close dialog
+      setNewDrink({
+        name: '',
+        description: '',
+        price: 0,
+        featured: false,
+        imageUrl: ''
+      });
+      setAddDrinkOpen(false);
+
+      // Refresh the data
+      await fetchShopData(shop.id);
+    } catch (error) {
+      console.error('Error adding drink:', error);
+    }
+  };
+
+  // Function to open edit dialog with drink data
+  const handleEditClick = (drink: Drink) => {
+    setSelectedDrink(drink);
+    setEditingDrink({
+      name: drink.name,
+      description: drink.description,
+      price: drink.price,
+      featured: drink.featured,
+      imageUrl: drink.imageUrl
+    });
+    setEditDrinkOpen(true);
+  };
+
+  // Function to handle drink updates
+  const handleUpdateDrink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shop?.id || !selectedDrink?.id) return;
+
+    try {
+      await UpdateDrink(shop.id, selectedDrink.id, {
+        name: editingDrink.name,
+        description: editingDrink.description,
+        price: parseFloat(editingDrink.price.toString()),
+        featured: editingDrink.featured,
+        imageUrl: editingDrink.imageUrl
+      });
+
+      // Reset form and close dialog
+      setSelectedDrink(null);
+      setEditDrinkOpen(false);
+
+      // Refresh the data
+      await fetchShopData(shop.id);
+    } catch (error) {
+      console.error('Error updating drink:', error);
+    }
+  };
+
+  // Function to handle delete confirmation
+  const handleDeleteClick = (drink: Drink) => {
+    setDrinkToDelete(drink);
+    setDeleteDialogOpen(true);
+  };
+
+  // Function to handle actual deletion
+  const handleDeleteConfirm = async () => {
+    if (!shop?.id || !drinkToDelete?.id) return;
+
+    try {
+      await DeleteDrink(shop.id, drinkToDelete.id);
+      setDeleteDialogOpen(false);
+      setDrinkToDelete(null);
+      await fetchShopData(shop.id);
+    } catch (error) {
+      console.error('Error deleting drink:', error);
     }
   };
 
@@ -179,9 +293,73 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
       <div className='flex flex-row mt-12 mb-4'>
         <h2 className='w-full text-lg font-bold'>Drinks</h2>
-        <Button>
-          <CirclePlus />Add Drink
-        </Button>
+        <Dialog open={addDrinkOpen} onOpenChange={setAddDrinkOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <CirclePlus />Add Drink
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Drink</DialogTitle>
+              <DialogDescription>
+                Add a new drink to your menu.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid w-full max-w-sm items-center gap-y-2">
+                <Label htmlFor="drinkName">Name</Label>
+                <Input
+                  type="text"
+                  id="drinkName"
+                  placeholder="Cappuccino"
+                  value={newDrink.name}
+                  onChange={(e) => setNewDrink(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="grid w-full gap-y-2">
+                <Label htmlFor="drinkDescription">Description</Label>
+                <Textarea
+                  id="drinkDescription"
+                  placeholder="Describe your drink..."
+                  value={newDrink.description}
+                  onChange={(e) => setNewDrink(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div className="grid w-full max-w-sm items-center gap-y-2">
+                <Label htmlFor="drinkPrice">Price (€)</Label>
+                <Input
+                  type="number"
+                  id="drinkPrice"
+                  placeholder="3.50"
+                  value={newDrink.price}
+                  onChange={(e) => setNewDrink(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                />
+              </div>
+              <div className="flex items-center gap-x-2">
+                <Switch
+                  id="featured"
+                  checked={newDrink.featured}
+                  onCheckedChange={(checked) => setNewDrink(prev => ({ ...prev, featured: checked }))}
+                />
+                <Label htmlFor="featured">Featured Drink</Label>
+              </div>
+              <div className="grid w-full max-w-sm items-center gap-y-2">
+                <Label htmlFor="drinkImageUrl">Image URL</Label>
+                <Input
+                  type="text"
+                  id="drinkImageUrl"
+                  placeholder="image.png"
+                  value={newDrink.imageUrl}
+                  onChange={(e) => setNewDrink(prev => ({ ...prev, imageUrl: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" onClick={handleAddDrink}>Add Drink</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       <Table>
         <TableHeader>
@@ -191,7 +369,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
             <TableHead>Price</TableHead>
             <TableHead>Featured</TableHead>
             <TableHead>Image URL</TableHead>
-            <TableHead></TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -199,18 +377,108 @@ export default function ShopPage({ params }: { params: { id: string } }) {
             <TableRow key={drink.id}>
               <TableCell>{drink.name}</TableCell>
               <TableCell>{drink.description}</TableCell>
-              <TableCell>${drink.price.toFixed(2)}</TableCell>
+              <TableCell>{drink.price.toFixed(2)}€</TableCell>
               <TableCell>{drink.featured.toString()}</TableCell>
               <TableCell>{drink.imageUrl}</TableCell>
-              <TableCell>
-                <Button variant="link" >
-                  <Pencil />Edit
-                </Button>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Button variant="link" onClick={() => handleEditClick(drink)}>
+                    <Pencil className="h-4 w-4 mr-1" />Edit
+                  </Button>
+                  <Button 
+                    variant="link" 
+                    onClick={() => handleDeleteClick(drink)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />Delete
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <Dialog open={editDrinkOpen} onOpenChange={setEditDrinkOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Drink</DialogTitle>
+            <DialogDescription>
+              Update the details of your drink.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid w-full max-w-sm items-center gap-y-2">
+              <Label htmlFor="editDrinkName">Name</Label>
+              <Input
+                type="text"
+                id="editDrinkName"
+                value={editingDrink.name}
+                onChange={(e) => setEditingDrink(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div className="grid w-full gap-y-2">
+              <Label htmlFor="editDrinkDescription">Description</Label>
+              <Textarea
+                id="editDrinkDescription"
+                value={editingDrink.description}
+                onChange={(e) => setEditingDrink(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+            <div className="grid w-full max-w-sm items-center gap-y-2">
+              <Label htmlFor="editDrinkPrice">Price (€)</Label>
+              <Input
+                type="number"
+                id="editDrinkPrice"
+                value={editingDrink.price}
+                onChange={(e) => setEditingDrink(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div className="flex items-center gap-x-2">
+              <Switch
+                id="editFeatured"
+                checked={editingDrink.featured}
+                onCheckedChange={(checked) => setEditingDrink(prev => ({ ...prev, featured: checked }))}
+              />
+              <Label htmlFor="editFeatured">Featured Drink</Label>
+            </div>
+            <div className="grid w-full max-w-sm items-center gap-y-2">
+              <Label htmlFor="editDrinkImageUrl">Image URL</Label>
+              <Input
+                type="text"
+                id="editDrinkImageUrl"
+                value={editingDrink.imageUrl}
+                onChange={(e) => setEditingDrink(prev => ({ ...prev, imageUrl: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleUpdateDrink}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete{' '}
+              <span className="font-semibold">{drinkToDelete?.name}</span>{' '}
+              from the menu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

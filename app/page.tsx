@@ -20,26 +20,27 @@ export default function Home() {
   const [data, setData] = useState<CoffeeShop[]>([]);
   const fetchedRef = useRef(false);
 
+  // Move fetchData outside useEffect
+  const fetchData = async () => {
+    const querySnapshot = await getDocs(collection(db, 'shops'));
+    const items: CoffeeShop[] = [];
+    querySnapshot.forEach((doc) => {
+      items.push({ id: doc.id, ...doc.data() } as CoffeeShop);
+    });
+    setData(items);
+  };
+
   useEffect(() => {
     if (fetchedRef.current) return;
     
-    async function fetchData() {
-      const querySnapshot = await getDocs(collection(db, 'shops'));
-      const items: CoffeeShop[] = [];
-      querySnapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() } as CoffeeShop);
-      });
-      setData(items);
-      
-      fetchedRef.current = true;
-    }
-    
+    // Initial fetch
     fetchData();
+    fetchedRef.current = true;
   }, []);
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] min-w-full items-start justify-items-center min-h-screen p-8 pb-4 gap-8 sm:p-8 font-[family-name:var(--font-geist-sans)]">
-      <CoffeeTableHeader />
+      <CoffeeTableHeader onShopAdded={fetchData}/>
       <div className='w-full'>
         {/* Coffee Shops Overview Table */}
         <Table>
