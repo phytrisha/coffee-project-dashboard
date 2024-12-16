@@ -8,6 +8,7 @@ import { CoffeeTableHeader } from "@/components/coffee-table-header";
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
+import Image from 'next/image'
 
 interface CoffeeShop {
   id: string;
@@ -46,9 +47,9 @@ export default function Home() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>Image</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -56,14 +57,20 @@ export default function Home() {
             {data.map(item => (
               <TableRow key={item.id}>
                 <TableCell>
+                  <Image
+                    src={item.imageUrl}
+                    width={100}
+                    height={100}
+                    alt="Picture of the Drink"
+                  />
+                </TableCell>
+                <TableCell>
                   {item.name}
                 </TableCell>
                 <TableCell>
                   {item.description}
                 </TableCell>
-                <TableCell>
-                  {item.imageUrl}
-                </TableCell>
+                
                 <TableCell className='flex flex-row-reverse'>
                   <Link href={`/shop/${item.id}`}>
                     <Button variant="link">
