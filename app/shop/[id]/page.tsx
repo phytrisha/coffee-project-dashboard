@@ -140,6 +140,24 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const handleDrinkImageUpload = async (drink: Drink, newDrinkImageUrl?: string) => {
+    if (!shop?.id) return;
+    console.log("Drink ID: " + drink.id)
+    console.log("Shop ID: " + shop.id)
+    console.log("Image URL: " + newDrinkImageUrl)
+    if (newDrinkImageUrl) {
+      try {
+        await UpdateDrink(shop.id, drink.id, {
+          imageUrl: newDrinkImageUrl
+        });
+
+        await fetchShopData(shop.id);
+      } catch (error) {
+        console.error('Error updating shop:', error);
+      }
+    }
+  }
+
   const handleAddDrink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shop?.id) return;
@@ -327,7 +345,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
               src={shop.imageUrl}
               width={100}
               height={100}
-              alt="Picture of the author"
+              alt="Picture of the Coffee Shop"
             />
             </TableCell>
             <TableCell className='font-mono'>{shop.id}</TableCell>
@@ -390,16 +408,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
                 />
                 <Label htmlFor="featured">Featured Drink</Label>
               </div>
-              <div className="grid w-full max-w-sm items-center gap-y-2">
-                <Label htmlFor="drinkImageUrl">Image URL</Label>
-                <Input
-                  type="text"
-                  id="drinkImageUrl"
-                  placeholder="image.png"
-                  value={newDrink.imageUrl}
-                  onChange={(e) => setNewDrink(prev => ({ ...prev, imageUrl: e.target.value }))}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button type="submit" onClick={handleAddDrink}>Add Drink</Button>
@@ -410,24 +418,57 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Image</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Price</TableHead>
             <TableHead>Featured</TableHead>
-            <TableHead>Image URL</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {shop.drinks?.map(drink => (
             <TableRow key={drink.id}>
+              <TableCell>
+                <Image
+                  src={drink.imageUrl}
+                  width={100}
+                  height={100}
+                  alt="Picture of the Drink"
+                />
+              </TableCell>
               <TableCell>{drink.name}</TableCell>
               <TableCell>{drink.description}</TableCell>
               <TableCell>{drink.price.toFixed(2)}€</TableCell>
               <TableCell>{drink.featured.toString()}</TableCell>
-              <TableCell>{drink.imageUrl}</TableCell>
-              <TableCell className="text-right">
+              <TableCell>
                 <div className="flex justify-end gap-2">
+                <CldUploadWidget
+                  options={{ sources: ['local', 'url', 'unsplash'] }}
+                  uploadPreset="coffee-shop-image"
+                  onSuccess={(result) => {
+                    // console.log(result)
+                    if (result && result.info) {
+                        const imageUrl = (result.info as CloudinaryUploadWidgetInfo).secure_url;
+                        handleDrinkImageUpload(drink, imageUrl);
+                    }
+                    
+                  }}
+                  onQueuesEnd={(result, { widget }) => {
+                    widget.close();
+                  }}
+                >
+                  {({ open }) => {
+                    function handleOnClick() {
+                      open();
+                    }
+                    return (
+                      <Button variant="link" onClick={handleOnClick}>
+                        <Upload />Upload an Image
+                      </Button>
+                    );
+                  }}
+                </CldUploadWidget>
                   <Button variant="link" onClick={() => handleEditClick(drink)}>
                     <Pencil className="h-4 w-4 mr-1" />Edit
                   </Button>
@@ -487,15 +528,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
                 onCheckedChange={(checked) => setEditingDrink(prev => ({ ...prev, featured: checked }))}
               />
               <Label htmlFor="editFeatured">Featured Drink</Label>
-            </div>
-            <div className="grid w-full max-w-sm items-center gap-y-2">
-              <Label htmlFor="editDrinkImageUrl">Image URL</Label>
-              <Input
-                type="text"
-                id="editDrinkImageUrl"
-                value={editingDrink.imageUrl}
-                onChange={(e) => setEditingDrink(prev => ({ ...prev, imageUrl: e.target.value }))}
-              />
             </div>
           </div>
           <DialogFooter>
