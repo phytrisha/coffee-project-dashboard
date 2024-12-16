@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { CldUploadWidget } from 'next-cloudinary';
+import Image from 'next/image'
+
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +18,7 @@ import { UpdateCoffeeShop } from "@/components/coffee-shop";
 import { Switch } from "@/components/ui/switch";
 import { AddDrink, UpdateDrink, DeleteDrink } from "@/components/drinks"
 
-import { ChevronLeft, Pencil, CirclePlus, Pen, Trash2 } from "lucide-react";
+import { ChevronLeft, Pencil, CirclePlus, Pen, Trash2, Upload } from "lucide-react";
 import Link from 'next/link'
 
 interface Drink {
@@ -119,6 +122,22 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const handleImageUpload = async (newImageUrl: string) => {
+    if (!shop?.id) return;
+    try {
+      await UpdateCoffeeShop(shop.id, {
+        imageUrl: newImageUrl
+      });
+  
+      // Refetch data
+      await fetchShopData(shop.id);
+      // setEditCoffeeShopOpen(false);  // Close the dialog
+      
+    } catch (error) {
+      console.error('Error updating shop:', error);
+    }
+  }
+
   const handleAddDrink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shop?.id) return;
@@ -220,9 +239,35 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
       <div className='flex flex-row mt-8 mb-4'>
         <h2 className='w-full text-lg font-bold'>Shop Information</h2>
+
+        <CldUploadWidget
+          options={{ sources: ['local', 'url', 'unsplash'] }}
+          uploadPreset="coffee-shop-image"
+          onSuccess={(result) => {
+            if (result && result.info) {
+                // Use result.info here, it's safe
+                handleImageUpload(result?.info.secure_url);
+            }
+            
+          }}
+          onQueuesEnd={(result, { widget }) => {
+            widget.close();
+          }}
+        >
+          {({ open }) => {
+            function handleOnClick() {
+              open();
+            }
+            return (
+              <Button variant="link" onClick={handleOnClick}>
+                <Upload />Upload an Image
+              </Button>
+            );
+          }}
+        </CldUploadWidget>
         
         <Dialog open={editCoffeeShopOpen} onOpenChange={setEditCoffeeShopOpen}>
-          <DialogTrigger>
+          <DialogTrigger asChild>
             <Button variant="link">
               <Pen />Edit
             </Button>
@@ -254,16 +299,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
                   onChange={(e) => setDescriptionInputValue(e.target.value)}
                 />
               </div>
-              <div className="grid w-full max-w-sm items-center gap-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input
-                  type="imageUrl"
-                  id="imageUrl"
-                  placeholder="image.png"
-                  value={imageUrlInputValue}
-                  onChange={(e) => setImageUrlInputValue(e.target.value)}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
@@ -272,21 +307,29 @@ export default function ShopPage({ params }: { params: { id: string } }) {
           
         </Dialog>
       </div>
+
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Image</TableHead>
             <TableHead>ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Image URL</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow>
+            <TableCell>
+            <Image
+              src={shop.imageUrl}
+              width={100}
+              height={100}
+              alt="Picture of the author"
+            />
+            </TableCell>
             <TableCell className='font-mono'>{shop.id}</TableCell>
             <TableCell>{shop.name}</TableCell>
             <TableCell>{shop.description}</TableCell>
-            <TableCell>{shop.imageUrl}</TableCell>
           </TableRow>
         </TableBody>
       </Table>
