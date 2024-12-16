@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CldUploadWidget } from 'next-cloudinary';
+import { CldUploadWidget, CloudinaryUploadWidgetInfo } from 'next-cloudinary';
 import Image from 'next/image'
 
 
@@ -122,19 +122,21 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     }
   };
 
-  const handleImageUpload = async (newImageUrl: string) => {
+  const handleImageUpload = async (newImageUrl?: string) => {
     if (!shop?.id) return;
-    try {
-      await UpdateCoffeeShop(shop.id, {
-        imageUrl: newImageUrl
-      });
-  
-      // Refetch data
-      await fetchShopData(shop.id);
-      // setEditCoffeeShopOpen(false);  // Close the dialog
-      
-    } catch (error) {
-      console.error('Error updating shop:', error);
+    if (newImageUrl) {
+      try {
+        await UpdateCoffeeShop(shop.id, {
+          imageUrl: newImageUrl
+        });
+    
+        // Refetch data
+        await fetchShopData(shop.id);
+        // setEditCoffeeShopOpen(false);  // Close the dialog
+        
+      } catch (error) {
+        console.error('Error updating shop:', error);
+      }  
     }
   }
 
@@ -244,9 +246,10 @@ export default function ShopPage({ params }: { params: { id: string } }) {
           options={{ sources: ['local', 'url', 'unsplash'] }}
           uploadPreset="coffee-shop-image"
           onSuccess={(result) => {
+            // console.log(result)
             if (result && result.info) {
-                // Use result.info here, it's safe
-                handleImageUpload(result?.info.secure_url);
+                const imageUrl = (result.info as CloudinaryUploadWidgetInfo).secure_url;
+                handleImageUpload(imageUrl);
             }
             
           }}
