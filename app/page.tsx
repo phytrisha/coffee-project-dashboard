@@ -15,6 +15,7 @@ interface CoffeeShop {
   name: string;
   description: string;
   imageUrl: string;
+  featured: boolean;
 }
 
 export default function Home() {

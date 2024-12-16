@@ -35,6 +35,7 @@ interface CoffeeShop {
   name: string;
   description: string;
   imageUrl: string;
+  featured: boolean;
   drinks?: Drink[];
 }
 
@@ -43,6 +44,8 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const [nameInputValue, setNameInputValue] = useState(shop?.name || '');
   const [descriptionInputValue, setDescriptionInputValue] = useState('');
   const [imageUrlInputValue, setImageUrlInputValue] = useState('');
+  const [featuredInputValue, setFeaturedInputValue] = useState(false);
+
   const [editCoffeeShopOpen, setEditCoffeeShopOpen] = useState(false);
 
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
@@ -75,6 +78,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       setNameInputValue(shop.name);
       setDescriptionInputValue(shop.description);
       setImageUrlInputValue(shop.imageUrl);
+      setFeaturedInputValue(shop.featured);
     }
   }, [shop]);
 
@@ -110,7 +114,8 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       await UpdateCoffeeShop(shop.id, {
         name: nameInputValue,
         description: descriptionInputValue,
-        imageUrl: imageUrlInputValue
+        imageUrl: imageUrlInputValue,
+        featured: featuredInputValue
       });
   
       // Refetch data
@@ -320,6 +325,14 @@ export default function ShopPage({ params }: { params: { id: string } }) {
                   onChange={(e) => setDescriptionInputValue(e.target.value)}
                 />
               </div>
+              <div className="grid w-full gap-y-2">
+                <Label htmlFor="featured">Featured</Label>
+                <Switch
+                  id="featured"
+                  checked={featuredInputValue}
+                  onCheckedChange={(checked: boolean) => setFeaturedInputValue(checked)}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
@@ -336,6 +349,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
             <TableHead>ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead>Featured</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -351,6 +365,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
             <TableCell className='font-mono'>{shop.id}</TableCell>
             <TableCell>{shop.name}</TableCell>
             <TableCell>{shop.description}</TableCell>
+            <TableCell>{shop.featured.toString()}</TableCell>
           </TableRow>
         </TableBody>
       </Table>

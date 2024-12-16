@@ -12,6 +12,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch";
+
 import { AddCoffeeShop } from "./coffee-shop"
 import { useState } from 'react';
 
@@ -23,18 +25,23 @@ export function CoffeeTableHeader({ onShopAdded }: CoffeeTableHeaderProps) {
   const [nameInputValue, setNameInputValue] = useState('');
   const [descriptionInputValue, setDescriptionInputValue] = useState('');
   const [imageUrlInputValue, setImageUrlInputValue] = useState('');
+  const [featuredInputValue, setFeaturedInputValue] = useState(false);
+
+
+
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const resetForm = () => {
     setNameInputValue('');
     setDescriptionInputValue('');
     setImageUrlInputValue('');
+    setFeaturedInputValue(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await AddCoffeeShop(nameInputValue, descriptionInputValue, imageUrlInputValue);
+      await AddCoffeeShop(nameInputValue, descriptionInputValue, imageUrlInputValue, featuredInputValue);
       
       // Reset form
       resetForm();
@@ -92,13 +99,11 @@ export function CoffeeTableHeader({ onShopAdded }: CoffeeTableHeaderProps) {
                 />
               </div>
               <div className="grid w-full max-w-sm items-center gap-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input
-                  type="imageUrl"
-                  id="imageUrl"
-                  placeholder="image.png"
-                  value={imageUrlInputValue}
-                  onChange={(e) => setImageUrlInputValue(e.target.value)}
+                <Label htmlFor="featured">Featured</Label>
+                <Switch
+                  id="featured"
+                  checked={featuredInputValue}
+                  onCheckedChange={(checked: boolean) => setFeaturedInputValue(checked)}
                 />
               </div>
             </div>

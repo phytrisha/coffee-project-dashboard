@@ -1,12 +1,13 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 
-export async function AddCoffeeShop(name: string, description: string, imageUrl: string) {
+export async function AddCoffeeShop(name: string, description: string, imageUrl: string, featured: boolean) {
   try {
     const docRef = await addDoc(collection(db, 'shops'), {
       name,
       description,
-      imageUrl
+      imageUrl,
+      featured
     });
     console.log("Document written with ID: ", docRef.id);
     return docRef.id;
@@ -23,6 +24,7 @@ export async function UpdateCoffeeShop(
     name?: string;
     description?: string;
     imageUrl?: string;
+    featured?: boolean;
   }
 ) {
   try {
