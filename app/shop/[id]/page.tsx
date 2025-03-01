@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import axios, { AxiosError } from 'axios';
 import Link from 'next/link'
 import { ChevronLeft } from "lucide-react";
 
@@ -16,6 +17,9 @@ import DeleteDrinkDialog from '@/components/coffee-shop-page/delete-drink-dialog
 import ImageUploadButton from '@/components/coffee-shop-page/image-upload-button';
 import { AddDrink, UpdateDrink, DeleteDrink } from "@/components/drinks"
 import { UpdateCoffeeShop } from '@/components/coffee-shop';
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface Drink {
   id: string;
@@ -33,6 +37,11 @@ interface CoffeeShop {
   imageUrl: string;
   featured: boolean;
   drinks?: Drink[];
+}
+
+interface GeocodeResponse {
+  latitude: number;
+  longitude: number;
 }
 
 export default function ShopPage({ params }: { params: { id: string } }) {
@@ -66,6 +75,8 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [drinkToDelete, setDrinkToDelete] = useState<Drink | null>(null);
+
+  const [address, setAddress] = useState('');
 
   useEffect(() => {
     if (shop) {
@@ -140,6 +151,30 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       }
     }
   }
+
+  const updateShopLocation = async (address: string, shopId: string | undefined, fetchShopData: (id: string) => Promise<void>) => {
+    if (!shopId) return;
+  
+    try {
+      const response = await axios.post<GeocodeResponse>('/api/geocode', { address });
+      const { latitude, longitude } = response.data;
+  
+      await UpdateCoffeeShop(shopId, { lat: latitude, long: longitude });
+      await fetchShopData(shopId);
+  
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const axiosError = err as AxiosError<{ error: string }>;
+        console.error(axiosError);
+      } else {
+        console.error('An unexpected error occurred:', err);
+      }
+    }
+  };
+
+  const handleShopLocationUpdate = async () => {
+    await updateShopLocation(address, shop?.id, fetchShopData);
+  };
 
   const handleDrinkImageUpload = async (drink: Drink, newDrinkImageUrl?: string) => {
     if (!shop?.id) return;
@@ -249,6 +284,16 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       {/* Shop Information */}
       <div className='flex flex-row mt-8 mb-4'>
         <h2 className='w-full text-lg font-bold'>Shop Information</h2>
+        <div className='flex flex-row min-w-80'>
+          <Input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="Enter address"
+            className='w-full'
+          />
+          <Button onClick={handleShopLocationUpdate}>Update</Button>
+        </div>
         <ShopEditDialog
           open={editCoffeeShopOpen}
           onOpenChange={setEditCoffeeShopOpen}

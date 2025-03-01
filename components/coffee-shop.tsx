@@ -25,6 +25,8 @@ export async function UpdateCoffeeShop(
     description?: string;
     imageUrl?: string;
     featured?: boolean;
+    lat?: number;
+    long?: number;
   }
 ) {
   try {

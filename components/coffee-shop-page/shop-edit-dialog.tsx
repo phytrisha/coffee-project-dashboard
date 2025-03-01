@@ -20,7 +20,15 @@ interface ShopEditDialogProps {
 }
 
 const ShopEditDialog: React.FC<ShopEditDialogProps> = ({
-    open, onOpenChange, nameInputValue, descriptionInputValue, featuredInputValue, setNameInputValue, setDescriptionInputValue, setFeaturedInputValue, handleSubmit
+    open,
+    onOpenChange,
+    nameInputValue,
+    descriptionInputValue,
+    featuredInputValue,
+    setNameInputValue,
+    setDescriptionInputValue,
+    setFeaturedInputValue,
+    handleSubmit
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
