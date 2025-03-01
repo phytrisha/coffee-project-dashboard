@@ -32,7 +32,7 @@ interface CoffeeShop {
   description: string;
   imageUrl: string;
   featured: boolean;
-  drinks?: Drink;
+  drinks?: Drink[];
 }
 
 export default function ShopPage({ params }: { params: { id: string } }) {
@@ -56,6 +56,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const [editDrinkOpen, setEditDrinkOpen] = useState(false);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [editingDrink, setEditingDrink] = useState({
+    id: '',
     name: '',
     description: '',
     price: 0,
@@ -89,7 +90,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     }));
 
     const shopData = shopDoc.data();
-    console.log(shopData) 
 
     setShop({
       id: shopDoc.id,
@@ -99,12 +99,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       featured: shopData?.featured || false,
       drinks
     });
-
-    // setShop({
-    //   id: shopDoc.id,
-    //   ...shopDoc.data(),
-    //   drinks
-    // } as CoffeeShop);
   };
 
   useEffect(() => {
@@ -193,6 +187,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const handleEditClick = (drink: Drink) => {
     setSelectedDrink(drink);
     setEditingDrink({
+      id: drink.id,
       name: drink.name,
       description: drink.description,
       price: drink.price,
