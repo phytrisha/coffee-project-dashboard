@@ -1,25 +1,21 @@
+// src/app/shops/[id]/ShopPage.tsx
 'use client'
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CldUploadWidget, CloudinaryUploadWidgetInfo } from 'next-cloudinary';
-import Image from 'next/image'
-
-
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Button } from '@/components/ui/button';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { UpdateCoffeeShop } from "@/components/coffee-shop";
-import { Switch } from "@/components/ui/switch";
-import { AddDrink, UpdateDrink, DeleteDrink } from "@/components/drinks"
-
-import { ChevronLeft, Pencil, CirclePlus, Pen, Trash2, Upload } from "lucide-react";
 import Link from 'next/link'
+import { ChevronLeft } from "lucide-react";
+
+import ShopDetails from '@/components/coffee-shop-page/shop-details';
+import ShopEditDialog from '@/components/coffee-shop-page/shop-edit-dialog';
+import DrinksTable from '@/components/coffee-shop-page/drinks-table';
+import AddDrinkDialog from '@/components/coffee-shop-page/add-drink-dialog';
+import EditDrinkDialog from '@/components/coffee-shop-page/edit-drink-dialog';
+import DeleteDrinkDialog from '@/components/coffee-shop-page/delete-drink-dialog';
+import ImageUploadButton from '@/components/coffee-shop-page/image-upload-button';
+import { AddDrink, UpdateDrink, DeleteDrink } from "@/components/drinks"
+import { UpdateCoffeeShop } from '@/components/coffee-shop';
 
 interface Drink {
   id: string;
@@ -36,7 +32,7 @@ interface CoffeeShop {
   description: string;
   imageUrl: string;
   featured: boolean;
-  drinks?: Drink[];
+  drinks?: Drink;
 }
 
 export default function ShopPage({ params }: { params: { id: string } }) {
@@ -47,8 +43,8 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const [featuredInputValue, setFeaturedInputValue] = useState(false);
 
   const [editCoffeeShopOpen, setEditCoffeeShopOpen] = useState(false);
-
   const [addDrinkOpen, setAddDrinkOpen] = useState(false);
+
   const [newDrink, setNewDrink] = useState({
     name: '',
     description: '',
@@ -57,7 +53,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     imageUrl: ''
   });
 
-  // New state for editing drinks
   const [editDrinkOpen, setEditDrinkOpen] = useState(false);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [editingDrink, setEditingDrink] = useState({
@@ -68,11 +63,9 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     imageUrl: ''
   });
 
-  // New state for delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [drinkToDelete, setDrinkToDelete] = useState<Drink | null>(null);
 
-  // Add this new useEffect to update input values when shop data loads
   useEffect(() => {
     if (shop) {
       setNameInputValue(shop.name);
@@ -85,31 +78,45 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const fetchShopData = async (shopId: string) => {
     const shopDoc = await getDoc(doc(db, 'shops', shopId));
     const drinksSnapshot = await getDocs(collection(db, 'shops', shopId, 'drinks'));
-    
+
     const drinks = drinksSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+      id: doc.id as string,
+      name: doc.data().name as string || '',
+      description: doc.data().description as string || '',
+      price: doc.data().price as number || 0,
+      featured: doc.data().featured as boolean || false,
+      imageUrl: doc.data().imageUrl as string || ''
     }));
-  
+
+    const shopData = shopDoc.data();
+    console.log(shopData) 
+
     setShop({
       id: shopDoc.id,
-      ...shopDoc.data(),
+      name: shopData?.name || '', // Provide default values if needed
+      description: shopData?.description || '',
+      imageUrl: shopData?.imageUrl || '',
+      featured: shopData?.featured || false,
       drinks
-    } as CoffeeShop);
+    });
+
+    // setShop({
+    //   id: shopDoc.id,
+    //   ...shopDoc.data(),
+    //   drinks
+    // } as CoffeeShop);
   };
-  
-  // Use it in useEffect
+
   useEffect(() => {
     if (params.id) {
       fetchShopData(params.id);
     }
   }, [params.id]);
-  
-  // And in handleSubmit
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shop?.id) return;
-  
+
     try {
       await UpdateCoffeeShop(shop.id, {
         name: nameInputValue,
@@ -117,11 +124,9 @@ export default function ShopPage({ params }: { params: { id: string } }) {
         imageUrl: imageUrlInputValue,
         featured: featuredInputValue
       });
-  
-      // Refetch data
+
       await fetchShopData(shop.id);
-      setEditCoffeeShopOpen(false);  // Close the dialog
-      
+      setEditCoffeeShopOpen(false);
     } catch (error) {
       console.error('Error updating shop:', error);
     }
@@ -134,22 +139,16 @@ export default function ShopPage({ params }: { params: { id: string } }) {
         await UpdateCoffeeShop(shop.id, {
           imageUrl: newImageUrl
         });
-    
-        // Refetch data
+
         await fetchShopData(shop.id);
-        // setEditCoffeeShopOpen(false);  // Close the dialog
-        
       } catch (error) {
         console.error('Error updating shop:', error);
-      }  
+      }
     }
   }
 
   const handleDrinkImageUpload = async (drink: Drink, newDrinkImageUrl?: string) => {
     if (!shop?.id) return;
-    console.log("Drink ID: " + drink.id)
-    console.log("Shop ID: " + shop.id)
-    console.log("Image URL: " + newDrinkImageUrl)
     if (newDrinkImageUrl) {
       try {
         await UpdateDrink(shop.id, drink.id, {
@@ -176,7 +175,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
         imageUrl: newDrink.imageUrl
       });
 
-      // Reset form and close dialog
       setNewDrink({
         name: '',
         description: '',
@@ -186,14 +184,12 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       });
       setAddDrinkOpen(false);
 
-      // Refresh the data
       await fetchShopData(shop.id);
     } catch (error) {
       console.error('Error adding drink:', error);
     }
   };
 
-  // Function to open edit dialog with drink data
   const handleEditClick = (drink: Drink) => {
     setSelectedDrink(drink);
     setEditingDrink({
@@ -206,7 +202,6 @@ export default function ShopPage({ params }: { params: { id: string } }) {
     setEditDrinkOpen(true);
   };
 
-  // Function to handle drink updates
   const handleUpdateDrink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shop?.id || !selectedDrink?.id) return;
@@ -220,24 +215,20 @@ export default function ShopPage({ params }: { params: { id: string } }) {
         imageUrl: editingDrink.imageUrl
       });
 
-      // Reset form and close dialog
       setSelectedDrink(null);
       setEditDrinkOpen(false);
 
-      // Refresh the data
       await fetchShopData(shop.id);
     } catch (error) {
       console.error('Error updating drink:', error);
     }
   };
 
-  // Function to handle delete confirmation
   const handleDeleteClick = (drink: Drink) => {
     setDrinkToDelete(drink);
     setDeleteDialogOpen(true);
   };
 
-  // Function to handle actual deletion
   const handleDeleteConfirm = async () => {
     if (!shop?.id || !drinkToDelete?.id) return;
 
@@ -255,323 +246,61 @@ export default function ShopPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="p-8">
-      <Link href="../../" className='text-sm flex flex-row items-center font-medium my-4'><ChevronLeft size={20}/>Overview</Link>
+      <Link href="../../" className='text-sm flex flex-row items-center font-medium my-4'><ChevronLeft size={20} />Overview</Link>
       <div className='flex flex-row'>
-        <h1 className="w-full text-xl font-bold">
-          {shop.name}
-        </h1>
+        <h1 className="w-full text-xl font-bold">{shop.name}</h1>
       </div>
 
+      {/* Shop Information */}
       <div className='flex flex-row mt-8 mb-4'>
         <h2 className='w-full text-lg font-bold'>Shop Information</h2>
-
-        <CldUploadWidget
-          options={{ sources: ['local', 'url', 'unsplash'] }}
-          uploadPreset="coffee-shop-image"
-          onSuccess={(result) => {
-            // console.log(result)
-            if (result && result.info) {
-                const imageUrl = (result.info as CloudinaryUploadWidgetInfo).secure_url;
-                handleImageUpload(imageUrl);
-            }
-            
-          }}
-          onQueuesEnd={(result, { widget }) => {
-            widget.close();
-          }}
-        >
-          {({ open }) => {
-            function handleOnClick() {
-              open();
-            }
-            return (
-              <Button variant="link" onClick={handleOnClick}>
-                <Upload />Upload an Image
-              </Button>
-            );
-          }}
-        </CldUploadWidget>
-        
-        <Dialog open={editCoffeeShopOpen} onOpenChange={setEditCoffeeShopOpen}>
-          <DialogTrigger asChild>
-            <Button variant="link">
-              <Pen />Edit
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit</DialogTitle>
-              <DialogDescription>
-                Edit the details of your coffeeshop.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid w-full max-w-sm items-center gap-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  type="name"
-                  id="name"
-                  placeholder="My Coffee Shop"
-                  value={nameInputValue}
-                  onChange={(e) => setNameInputValue(e.target.value)}
-                />
-              </div>
-              <div className="grid w-full gap-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Type your message here."
-                  value={descriptionInputValue}
-                  onChange={(e) => setDescriptionInputValue(e.target.value)}
-                />
-              </div>
-              <div className="grid w-full gap-y-2">
-                <Label htmlFor="featured">Featured</Label>
-                <Switch
-                  id="featured"
-                  checked={featuredInputValue}
-                  onCheckedChange={(checked: boolean) => setFeaturedInputValue(checked)}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
-            </DialogFooter>
-          </DialogContent>
-          
-        </Dialog>
+        <ShopEditDialog
+          open={editCoffeeShopOpen}
+          onOpenChange={setEditCoffeeShopOpen}
+          nameInputValue={nameInputValue}
+          descriptionInputValue={descriptionInputValue}
+          featuredInputValue={featuredInputValue}
+          setNameInputValue={setNameInputValue}
+          setDescriptionInputValue={setDescriptionInputValue}
+          setFeaturedInputValue={setFeaturedInputValue}
+          handleSubmit={handleSubmit}
+        />
+        <ImageUploadButton onImageUpload={handleImageUpload} />
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Image</TableHead>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Featured</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow>
-            <TableCell>
-            <Image
-              src={shop.imageUrl}
-              width={100}
-              height={100}
-              alt="Picture of the Coffee Shop"
-            />
-            </TableCell>
-            <TableCell className='font-mono'>{shop.id}</TableCell>
-            <TableCell>{shop.name}</TableCell>
-            <TableCell>{shop.description}</TableCell>
-            <TableCell>{shop.featured.toString()}</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+      {/* Shop Details */}
+      <ShopDetails shop={shop} />
 
+      {/* Drinks */}
       <div className='flex flex-row mt-12 mb-4'>
         <h2 className='w-full text-lg font-bold'>Drinks</h2>
-        <Dialog open={addDrinkOpen} onOpenChange={setAddDrinkOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <CirclePlus />Add Drink
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Drink</DialogTitle>
-              <DialogDescription>
-                Add a new drink to your menu.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid w-full max-w-sm items-center gap-y-2">
-                <Label htmlFor="drinkName">Name</Label>
-                <Input
-                  type="text"
-                  id="drinkName"
-                  placeholder="Cappuccino"
-                  value={newDrink.name}
-                  onChange={(e) => setNewDrink(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="grid w-full gap-y-2">
-                <Label htmlFor="drinkDescription">Description</Label>
-                <Textarea
-                  id="drinkDescription"
-                  placeholder="Describe your drink..."
-                  value={newDrink.description}
-                  onChange={(e) => setNewDrink(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-              <div className="grid w-full max-w-sm items-center gap-y-2">
-                <Label htmlFor="drinkPrice">Price (€)</Label>
-                <Input
-                  type="number"
-                  id="drinkPrice"
-                  placeholder="3.50"
-                  value={newDrink.price}
-                  onChange={(e) => setNewDrink(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                />
-              </div>
-              <div className="flex items-center gap-x-2">
-                <Switch
-                  id="featured"
-                  checked={newDrink.featured}
-                  onCheckedChange={(checked) => setNewDrink(prev => ({ ...prev, featured: checked }))}
-                />
-                <Label htmlFor="featured">Featured Drink</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" onClick={handleAddDrink}>Add Drink</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <AddDrinkDialog open={addDrinkOpen} onOpenChange={setAddDrinkOpen} handleAddDrink={handleAddDrink} />
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Image</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Featured</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {shop.drinks?.map(drink => (
-            <TableRow key={drink.id}>
-              <TableCell>
-                <Image
-                  src={drink.imageUrl}
-                  width={100}
-                  height={100}
-                  alt="Picture of the Drink"
-                />
-              </TableCell>
-              <TableCell>{drink.name}</TableCell>
-              <TableCell>{drink.description}</TableCell>
-              <TableCell>{drink.price.toFixed(2)}€</TableCell>
-              <TableCell>{drink.featured.toString()}</TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-2">
-                <CldUploadWidget
-                  options={{ sources: ['local', 'url', 'unsplash'] }}
-                  uploadPreset="coffee-shop-image"
-                  onSuccess={(result) => {
-                    // console.log(result)
-                    if (result && result.info) {
-                        const imageUrl = (result.info as CloudinaryUploadWidgetInfo).secure_url;
-                        handleDrinkImageUpload(drink, imageUrl);
-                    }
-                    
-                  }}
-                  onQueuesEnd={(result, { widget }) => {
-                    widget.close();
-                  }}
-                >
-                  {({ open }) => {
-                    function handleOnClick() {
-                      open();
-                    }
-                    return (
-                      <Button variant="link" onClick={handleOnClick}>
-                        <Upload />Upload an Image
-                      </Button>
-                    );
-                  }}
-                </CldUploadWidget>
-                  <Button variant="link" onClick={() => handleEditClick(drink)}>
-                    <Pencil className="h-4 w-4 mr-1" />Edit
-                  </Button>
-                  <Button 
-                    variant="link" 
-                    onClick={() => handleDeleteClick(drink)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
 
-      <Dialog open={editDrinkOpen} onOpenChange={setEditDrinkOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Drink</DialogTitle>
-            <DialogDescription>
-              Update the details of your drink.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid w-full max-w-sm items-center gap-y-2">
-              <Label htmlFor="editDrinkName">Name</Label>
-              <Input
-                type="text"
-                id="editDrinkName"
-                value={editingDrink.name}
-                onChange={(e) => setEditingDrink(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-            <div className="grid w-full gap-y-2">
-              <Label htmlFor="editDrinkDescription">Description</Label>
-              <Textarea
-                id="editDrinkDescription"
-                value={editingDrink.description}
-                onChange={(e) => setEditingDrink(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-            <div className="grid w-full max-w-sm items-center gap-y-2">
-              <Label htmlFor="editDrinkPrice">Price (€)</Label>
-              <Input
-                type="number"
-                id="editDrinkPrice"
-                value={editingDrink.price}
-                onChange={(e) => setEditingDrink(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-              />
-            </div>
-            <div className="flex items-center gap-x-2">
-              <Switch
-                id="editFeatured"
-                checked={editingDrink.featured}
-                onCheckedChange={(checked) => setEditingDrink(prev => ({ ...prev, featured: checked }))}
-              />
-              <Label htmlFor="editFeatured">Featured Drink</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleUpdateDrink}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Drinks Table */}
+      <DrinksTable
+        drinks={shop.drinks}
+        handleEditClick={handleEditClick}
+        handleDeleteClick={handleDeleteClick}
+        handleDrinkImageUpload={handleDrinkImageUpload}
+      />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete{' '}
-              <span className="font-semibold">{drinkToDelete?.name}</span>{' '}
-              from the menu.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Edit Drink Dialog */}
+      <EditDrinkDialog
+        open={editDrinkOpen}
+        onOpenChange={setEditDrinkOpen}
+        editingDrink={editingDrink}
+        setEditingDrink={setEditingDrink}
+        handleUpdateDrink={handleUpdateDrink}
+      />
+
+      {/* Delete Drink Dialog */}
+      <DeleteDrinkDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        drinkToDelete={drinkToDelete}
+        handleDeleteConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }
