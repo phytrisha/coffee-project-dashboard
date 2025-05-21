@@ -25,6 +25,7 @@ export function CoffeeTableHeader({ onShopAdded }: CoffeeTableHeaderProps) {
   const [nameInputValue, setNameInputValue] = useState('');
   const [descriptionInputValue, setDescriptionInputValue] = useState('');
   const [imageUrlInputValue, setImageUrlInputValue] = useState('');
+  const [backgroundImageUrlInputValue, setBackgroundImageUrlInputValue] = useState('');
   const [featuredInputValue, setFeaturedInputValue] = useState(false);
 
 
@@ -41,7 +42,7 @@ export function CoffeeTableHeader({ onShopAdded }: CoffeeTableHeaderProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await AddCoffeeShop(nameInputValue, descriptionInputValue, imageUrlInputValue, featuredInputValue);
+      await AddCoffeeShop(nameInputValue, descriptionInputValue, imageUrlInputValue, backgroundImageUrlInputValue, featuredInputValue);
       
       // Reset form
       resetForm();

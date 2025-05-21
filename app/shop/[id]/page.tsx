@@ -15,6 +15,7 @@ import AddDrinkDialog from '@/components/coffee-shop-page/add-drink-dialog';
 import EditDrinkDialog from '@/components/coffee-shop-page/edit-drink-dialog';
 import DeleteDrinkDialog from '@/components/coffee-shop-page/delete-drink-dialog';
 import ImageUploadButton from '@/components/coffee-shop-page/image-upload-button';
+import BackgroundImageUploadButton from '@/components/coffee-shop-page/background-image-upload-button';
 import { AddDrink, UpdateDrink, DeleteDrink } from "@/components/drinks"
 import { UpdateCoffeeShop } from '@/components/coffee-shop';
 
@@ -35,6 +36,7 @@ interface CoffeeShop {
   name: string;
   description: string;
   imageUrl: string;
+  backgroundImageUrl: string;
   featured: boolean;
   drinks?: Drink[];
 }
@@ -49,6 +51,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
   const [nameInputValue, setNameInputValue] = useState(shop?.name || '');
   const [descriptionInputValue, setDescriptionInputValue] = useState('');
   const [imageUrlInputValue, setImageUrlInputValue] = useState('');
+  const [backgroundImageUrlInputValue, setBackgroundImageUrlInputValue] = useState('');
   const [featuredInputValue, setFeaturedInputValue] = useState(false);
 
   const [editCoffeeShopOpen, setEditCoffeeShopOpen] = useState(false);
@@ -83,6 +86,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       setNameInputValue(shop.name);
       setDescriptionInputValue(shop.description);
       setImageUrlInputValue(shop.imageUrl);
+      setBackgroundImageUrlInputValue(shop.backgroundImageUrl);
       setFeaturedInputValue(shop.featured);
     }
   }, [shop]);
@@ -97,7 +101,8 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       description: doc.data().description as string || '',
       price: doc.data().price as number || 0,
       featured: doc.data().featured as boolean || false,
-      imageUrl: doc.data().imageUrl as string || ''
+      imageUrl: doc.data().imageUrl as string || '',
+      backgroundImageUrl: doc.data().backgroundImageUrl as string || ''
     }));
 
     const shopData = shopDoc.data();
@@ -107,6 +112,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       name: shopData?.name || '', // Provide default values if needed
       description: shopData?.description || '',
       imageUrl: shopData?.imageUrl || '',
+      backgroundImageUrl: shopData?.backgroundImageUrl || '',
       featured: shopData?.featured || false,
       drinks
     });
@@ -127,6 +133,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
         name: nameInputValue,
         description: descriptionInputValue,
         imageUrl: imageUrlInputValue,
+        backgroundImageUrl: backgroundImageUrlInputValue,
         featured: featuredInputValue
       });
 
@@ -143,6 +150,21 @@ export default function ShopPage({ params }: { params: { id: string } }) {
       try {
         await UpdateCoffeeShop(shop.id, {
           imageUrl: newImageUrl
+        });
+
+        await fetchShopData(shop.id);
+      } catch (error) {
+        console.error('Error updating shop:', error);
+      }
+    }
+  }
+
+  const handleBackgroundImageUpload = async (newBackgroundImageUrl?: string) => {
+    if (!shop?.id) return;
+    if (newBackgroundImageUrl) {
+      try {
+        await UpdateCoffeeShop(shop.id, {
+          backgroundImageUrl: newBackgroundImageUrl
         });
 
         await fetchShopData(shop.id);
@@ -306,6 +328,7 @@ export default function ShopPage({ params }: { params: { id: string } }) {
           handleSubmit={handleSubmit}
         />
         <ImageUploadButton onImageUpload={handleImageUpload} />
+        <BackgroundImageUploadButton onImageUpload={handleBackgroundImageUpload} />
       </div>
 
       {/* Shop Details */}
