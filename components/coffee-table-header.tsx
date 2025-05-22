@@ -36,6 +36,7 @@ export function CoffeeTableHeader({ onShopAdded }: CoffeeTableHeaderProps) {
     setNameInputValue('');
     setDescriptionInputValue('');
     setImageUrlInputValue('');
+    setBackgroundImageUrlInputValue('');
     setFeaturedInputValue(false);
   };
 
